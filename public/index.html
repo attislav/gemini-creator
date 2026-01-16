@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Creator</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Gemini Creator</h1>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="image">Bildgenerierung</button>
+      <button class="tab" data-tab="video">Videogenerierung</button>
+      <button class="tab" data-tab="history">History</button>
+    </nav>
+
+    <main class="content">
+      <!-- Image Generation Tab -->
+      <section id="image-tab" class="tab-content active">
+        <div class="quick-guide">
+          <strong>Kurzanleitung:</strong> Prompt eingeben, Modell & Format wählen, Anzahl festlegen (1-4 Bilder). Optional: Referenzbilder hochladen und im Prompt mit "erstes Bild", "Bild 2" etc. ansprechen.
+        </div>
+
+        <form id="image-form" class="generator-form">
+          <div class="form-group">
+            <label for="image-prompt">Prompt</label>
+            <textarea id="image-prompt" placeholder="Beschreibe das Bild, das du erstellen möchtest..." rows="3" required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="image-model">Modell</label>
+              <select id="image-model">
+                <option value="nano-banana">Nano Banana (schnell)</option>
+                <option value="nano-banana-pro">Nano Banana Pro (höhere Qualität)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="image-aspect">Seitenverhältnis</label>
+              <select id="image-aspect">
+                <option value="1:1">1:1 (Quadrat)</option>
+                <option value="3:4">3:4 (Portrait)</option>
+                <option value="4:3">4:3 (Landscape)</option>
+                <option value="9:16">9:16 (Hochformat)</option>
+                <option value="16:9">16:9 (Breitbild)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" id="resolution-group" hidden>
+              <label for="image-resolution">Auflösung (nur Pro)</label>
+              <select id="image-resolution">
+                <option value="1K">1K (1024px) - Standard</option>
+                <option value="2K">2K (2048px)</option>
+                <option value="4K">4K (4096px) - Beste Qualität</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="image-count">Anzahl Bilder</label>
+              <select id="image-count">
+                <option value="1">1 Bild</option>
+                <option value="2">2 Bilder</option>
+                <option value="3">3 Bilder</option>
+                <option value="4">4 Bilder</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Referenzbilder (optional, max. 5)</label>
+            <div class="prompt-help">
+              <button type="button" class="help-toggle" id="help-toggle">Wie referenziere ich Bilder im Prompt?</button>
+              <div class="help-content" id="help-content" hidden>
+                <p><strong>So sprichst du die Bilder an:</strong></p>
+                <ul>
+                  <li><code>das erste Bild</code> / <code>Bild 1</code> / <code>the first image</code></li>
+                  <li><code>das zweite Bild</code> / <code>Bild 2</code> / <code>the second image</code></li>
+                  <li><code>das dritte Bild</code> / <code>Bild 3</code> / <code>the third image</code></li>
+                </ul>
+                <p><strong>Beispiel-Prompts:</strong></p>
+                <ul>
+                  <li>"Nimm das Kleid aus dem ersten Bild und lass die Frau aus dem zweiten Bild es tragen"</li>
+                  <li>"Kombiniere die Katze aus Bild 1 mit dem Hintergrund aus Bild 2"</li>
+                  <li>"Wende den Stil aus dem zweiten Bild auf das erste Bild an"</li>
+                  <li>"Place the product from image 1 into the scene from image 2"</li>
+                </ul>
+              </div>
+            </div>
+            <div class="multi-upload-container" id="reference-images-container">
+              <!-- Dynamisch hinzugefügte Bilder -->
+            </div>
+            <div class="reference-image-buttons">
+              <button type="button" class="btn-add-image" id="add-reference-image">+ Bild hinzufügen</button>
+              <button type="button" class="btn-history-picker" id="pick-reference-image">Aus History wählen</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="generate-image-btn">
+            <span class="btn-text">Bild generieren</span>
+            <span class="btn-loading" hidden>Generiere...</span>
+          </button>
+        </form>
+
+        <div class="result-area" id="image-result" hidden>
+          <h3>Ergebnis <span id="result-count"></span></h3>
+          <div class="result-grid" id="result-grid">
+            <!-- Generated images will be inserted here -->
+          </div>
+          <div class="result-actions">
+            <button class="btn-secondary" id="download-all-images">Alle herunterladen</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Video Generation Tab -->
+      <section id="video-tab" class="tab-content">
+        <div class="quick-guide">
+          <strong>Kurzanleitung:</strong> Modell wählen (Veo 3.1 oder Fast), Auflösung (bis 4K) & Länge (5/8 Sek.). Optional: Start-/End-Frame hochladen. Videos können in der History verlängert werden (bis 148 Sek.)!
+        </div>
+
+        <form id="video-form" class="generator-form">
+          <div class="form-group">
+            <label for="video-prompt">Prompt</label>
+            <textarea id="video-prompt" placeholder="Beschreibe das Video, das du erstellen möchtest..." rows="3" required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="video-model">Modell</label>
+              <select id="video-model">
+                <option value="veo-3.1">Veo 3.1 (beste Qualität)</option>
+                <option value="veo-3.1-fast" selected>Veo 3.1 Fast (schneller)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="video-aspect">Seitenverhältnis</label>
+              <select id="video-aspect">
+                <option value="9:16">9:16 (Portrait)</option>
+                <option value="16:9" selected>16:9 (Landscape)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="video-resolution">Auflösung</label>
+              <select id="video-resolution">
+                <option value="720p">720p (schnell)</option>
+                <option value="1080p" selected>1080p (Full HD)</option>
+                <option value="4k">4K (höchste Qualität)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="video-duration">Länge</label>
+              <select id="video-duration">
+                <option value="4" selected>4 Sekunden</option>
+                <option value="8">8 Sekunden</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="video-audio">
+                Audio generieren
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start-Frame (optional)</label>
+              <div class="upload-area small" id="start-frame-area">
+                <input type="file" id="start-frame" accept="image/*" hidden>
+                <div class="upload-placeholder">
+                  <span>Start-Bild</span>
+                </div>
+                <img class="upload-preview" id="start-frame-preview" hidden>
+                <button type="button" class="clear-upload" id="clear-start-frame" hidden>X</button>
+              </div>
+              <button type="button" class="btn-history-picker" id="pick-start-frame">Aus History wählen</button>
+            </div>
+
+            <div class="form-group">
+              <label>End-Frame (optional)</label>
+              <div class="upload-area small" id="end-frame-area">
+                <input type="file" id="end-frame" accept="image/*" hidden>
+                <div class="upload-placeholder">
+                  <span>End-Bild</span>
+                </div>
+                <img class="upload-preview" id="end-frame-preview" hidden>
+                <button type="button" class="clear-upload" id="clear-end-frame" hidden>X</button>
+              </div>
+              <button type="button" class="btn-history-picker" id="pick-end-frame">Aus History wählen</button>
+            </div>
+          </div>
+          <p class="frame-warning" id="frame-warning" hidden>⚠️ End-Frame benötigt ein Start-Frame!</p>
+
+          <button type="submit" class="btn-primary" id="generate-video-btn">
+            <span class="btn-text">Video generieren</span>
+            <span class="btn-loading" hidden>Generiere...</span>
+          </button>
+        </form>
+
+        <div class="status-area" id="video-status" hidden>
+          <h3>Status</h3>
+          <div class="progress-bar">
+            <div class="progress-fill" id="video-progress"></div>
+          </div>
+          <p class="status-text" id="status-text">Warte auf Verarbeitung...</p>
+        </div>
+
+        <div class="result-area" id="video-result" hidden>
+          <h3>Ergebnis</h3>
+          <div class="result-preview">
+            <video id="generated-video" controls></video>
+          </div>
+          <div class="result-actions">
+            <button class="btn-secondary" id="download-video">Download</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- History Tab -->
+      <section id="history-tab" class="tab-content">
+        <div class="history-controls">
+          <select id="history-filter">
+            <option value="">Alle</option>
+            <option value="image">Bilder</option>
+            <option value="video">Videos</option>
+          </select>
+          <button class="btn-secondary" id="refresh-history">Aktualisieren</button>
+        </div>
+
+        <div class="history-grid" id="history-grid">
+          <!-- Items werden per JS eingefügt -->
+        </div>
+
+        <div class="history-empty" id="history-empty" hidden>
+          <p>Noch keine Generierungen vorhanden.</p>
+        </div>
+
+        <button class="btn-secondary load-more" id="load-more" hidden>Mehr laden</button>
+      </section>
+    </main>
+  </div>
+
+  <!-- Media Modal -->
+  <div class="modal" id="media-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">&times;</button>
+      <div class="modal-zoom-controls" id="zoom-controls" hidden>
+        <button class="btn-zoom" id="zoom-fit" title="An Fenster anpassen">⊡</button>
+        <button class="btn-zoom" id="zoom-100" title="100% (Originalgröße)">1:1</button>
+        <button class="btn-zoom" id="zoom-out" title="Verkleinern">−</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button class="btn-zoom" id="zoom-in" title="Vergrößern">+</button>
+      </div>
+      <div class="modal-media">
+        <img id="modal-image" hidden>
+        <video id="modal-video" controls hidden></video>
+      </div>
+      <div class="modal-info">
+        <p class="modal-prompt" id="modal-prompt"></p>
+        <p class="modal-meta" id="modal-meta"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="modal-download">Download</button>
+        <button class="btn-primary" id="modal-use-again">Nochmal verwenden</button>
+        <button class="btn-secondary" id="modal-use-image" hidden>Als Referenzbild</button>
+        <button class="btn-secondary" id="modal-use-video-start">Als Start-Frame</button>
+        <button class="btn-secondary" id="modal-use-video-end">Als End-Frame</button>
+        <button class="btn-primary" id="modal-extend-video" hidden>Video verlängern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Picker Modal -->
+  <div class="modal" id="history-picker-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content picker-content">
+      <button class="modal-close" id="picker-close">&times;</button>
+      <div class="picker-header">
+        <h3>Bild aus History wählen</h3>
+      </div>
+      <div class="picker-grid" id="picker-grid">
+        <!-- Images will be loaded here -->
+      </div>
+      <div class="picker-empty" id="picker-empty" hidden>
+        <p>Keine Bilder in der History.</p>
+      </div>
+      <button class="btn-secondary load-more" id="picker-load-more" hidden>Mehr laden</button>
+    </div>
+  </div>
+
+  <div class="notification" id="notification" hidden></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/imageGenerator.js"></script>
+  <script src="js/videoGenerator.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
