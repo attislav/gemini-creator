@@ -52,6 +52,46 @@ const ImageGenerator = {
     document.getElementById('pick-reference-image').addEventListener('click', () => {
       this.openHistoryPicker();
     });
+
+    // Paste support for reference images (Ctrl+V)
+    document.addEventListener('paste', (e) => this.handlePaste(e));
+  },
+
+  handlePaste(e) {
+    // Only handle paste when image tab is active
+    if (!document.getElementById('image-tab').classList.contains('active')) {
+      return;
+    }
+
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          this.addImageFromFile(file);
+        }
+        break;
+      }
+    }
+  },
+
+  addImageFromFile(file) {
+    if (this.referenceImages.length >= this.maxImages) {
+      App.showNotification(`Maximal ${this.maxImages} Bilder erlaubt`, 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const base64 = dataUrl.split(',')[1];
+      this.addImageFromUrl(dataUrl, base64, null);
+      App.showNotification('Bild eingefügt', 'success');
+    };
+    reader.readAsDataURL(file);
   },
 
   openHistoryPicker() {

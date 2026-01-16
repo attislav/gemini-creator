@@ -63,6 +63,50 @@ const VideoGenerator = {
     document.getElementById('pick-end-frame').addEventListener('click', () => {
       this.openHistoryPicker('end');
     });
+
+    // Paste support for frames (Ctrl+V)
+    document.addEventListener('paste', (e) => this.handlePaste(e));
+  },
+
+  handlePaste(e) {
+    // Only handle paste when video tab is active
+    if (!document.getElementById('video-tab').classList.contains('active')) {
+      return;
+    }
+
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          this.addFrameFromFile(file);
+        }
+        break;
+      }
+    }
+  },
+
+  addFrameFromFile(file) {
+    // Determine which frame slot to fill: start first, then end
+    let frameType = 'start';
+    if (this.startFrameBase64 && !this.endFrameBase64) {
+      frameType = 'end';
+    } else if (this.startFrameBase64 && this.endFrameBase64) {
+      App.showNotification('Beide Frames sind bereits belegt', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const base64 = dataUrl.split(',')[1];
+      this.setFrameFromUrl(dataUrl, base64, frameType);
+      App.showNotification(`${frameType === 'start' ? 'Start' : 'End'}-Frame eingefügt`, 'success');
+    };
+    reader.readAsDataURL(file);
   },
 
   openHistoryPicker(frameType) {

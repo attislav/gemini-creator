@@ -91,8 +91,10 @@ async function startVideoGeneration(prompt, modelAlias = 'veo-3.1', aspectRatio 
   // Build instance - exactly like working n8n workflow
   const instance = { prompt };
 
-  // Check if using frames (only works with Veo 3.1, not Fast)
-  const hasFrames = (startFrameBase64 || endFrameBase64) && modelAlias === 'veo-3.1';
+  // Check if using frames (both work with Veo 3.1 and Fast)
+  const hasStartFrame = !!startFrameBase64;
+  const hasEndFrame = !!endFrameBase64;
+  const hasFrames = hasStartFrame || hasEndFrame;
 
   // When using frames: force 8 seconds duration (API requirement)
   if (hasFrames && duration !== 8) {
@@ -100,16 +102,16 @@ async function startVideoGeneration(prompt, modelAlias = 'veo-3.1', aspectRatio 
     duration = 8;
   }
 
-  // Start frame (only Veo 3.1, not Fast)
-  if (startFrameBase64 && modelAlias === 'veo-3.1') {
+  // Start frame (works with both Veo 3.1 and Fast)
+  if (startFrameBase64) {
     instance.image = {
       mimeType: 'image/png',
       bytesBase64Encoded: startFrameBase64
     };
   }
 
-  // End frame - lastFrame in instance (from working n8n workflow!)
-  if (endFrameBase64 && modelAlias === 'veo-3.1') {
+  // End frame - lastFrame in instance (works with both Veo 3.1 and Fast)
+  if (endFrameBase64) {
     instance.lastFrame = {
       mimeType: 'image/png',
       bytesBase64Encoded: endFrameBase64
@@ -139,8 +141,8 @@ async function startVideoGeneration(prompt, modelAlias = 'veo-3.1', aspectRatio 
   console.log('[GEMINI] Video Generation Request:');
   console.log('[GEMINI] Model:', model);
   console.log('[GEMINI] Prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
-  console.log('[GEMINI] Start Frame:', startFrameBase64 ? (modelAlias === 'veo-3.1' ? `${Math.round(startFrameBase64.length / 1024)}KB` : 'ignored (Fast)') : 'none');
-  console.log('[GEMINI] End Frame:', endFrameBase64 ? (modelAlias === 'veo-3.1' ? `${Math.round(endFrameBase64.length / 1024)}KB` : 'ignored (Fast)') : 'none');
+  console.log('[GEMINI] Start Frame:', startFrameBase64 ? `${Math.round(startFrameBase64.length / 1024)}KB` : 'none');
+  console.log('[GEMINI] End Frame:', endFrameBase64 ? `${Math.round(endFrameBase64.length / 1024)}KB` : 'none');
   const audioStatus = hasFrames ? 'disabled (frames)' : (generateAudio ? 'enabled' : 'disabled');
   console.log('[GEMINI] Aspect:', aspectRatio, '| Duration:', duration, 's | Audio:', audioStatus, '| Resolution:', resolution);
 
