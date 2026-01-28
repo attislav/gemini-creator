@@ -15,6 +15,7 @@ const ImageGenerator = {
   resultGrid: null,
   resultCount: null,
   downloadAllButton: null,
+  resetButton: null,
   currentGenerations: [],
   referenceImages: [],      // Base64 data
   referenceImageIds: [],    // History IDs (if from history)
@@ -37,6 +38,7 @@ const ImageGenerator = {
     this.resultGrid = document.getElementById('result-grid');
     this.resultCount = document.getElementById('result-count');
     this.downloadAllButton = document.getElementById('download-all-images');
+    this.resetButton = document.getElementById('reset-image-btn');
 
     this.bindEvents();
   },
@@ -47,6 +49,7 @@ const ImageGenerator = {
     this.helpToggle.addEventListener('click', () => this.toggleHelp());
     this.downloadAllButton.addEventListener('click', () => this.downloadAllImages());
     this.modelSelect.addEventListener('change', () => this.onModelChange());
+    this.resetButton.addEventListener('click', () => this.reset());
 
     // History picker for reference images
     document.getElementById('pick-reference-image').addEventListener('click', () => {
@@ -308,30 +311,30 @@ const ImageGenerator = {
     this.currentGenerations = [];
     this.resultArea.hidden = false;
 
-    // Show progress UI
-    this.showBatchProgress(count);
+    // Prepare empty result grid for streaming results
+    this.prepareResultGrid(count);
 
     let successCount = 0;
     let errorCount = 0;
 
     for (let i = 0; i < count; i++) {
-      this.updateBatchProgress(i, 'active');
+      this.updateSlotStatus(i, 'loading');
 
       try {
         const result = await API.generateImage(prompt, model, aspectRatio, validImages, resolution, validImageIds);
         this.currentGenerations.push(result);
-        this.updateBatchProgress(i, 'completed');
+        // Show image immediately when ready
+        this.displaySingleResult(i, result);
         successCount++;
       } catch (error) {
         console.error(`Image ${i + 1} failed:`, error);
-        this.updateBatchProgress(i, 'error');
+        this.updateSlotStatus(i, 'error');
         errorCount++;
       }
     }
 
-    // Show results
-    this.displayResults();
     this.setLoading(false);
+    this.resultCount.textContent = `(${successCount})`;
 
     if (successCount > 0 && errorCount === 0) {
       App.showNotification(`${successCount} Bild${successCount > 1 ? 'er' : ''} erfolgreich generiert!`, 'success');
@@ -342,28 +345,72 @@ const ImageGenerator = {
     }
   },
 
-  showBatchProgress(count) {
-    this.resultGrid.innerHTML = `
-      <div class="batch-progress" style="grid-column: 1 / -1;">
-        <p class="progress-text">Generiere Bilder...</p>
-        <div class="progress-dots">
-          ${Array(count).fill(0).map((_, i) => `<div class="dot" data-index="${i}"></div>`).join('')}
+  prepareResultGrid(count) {
+    this.resultGrid.classList.toggle('single-item', count === 1);
+    this.resultCount.textContent = '';
+
+    // Create placeholder slots for each image
+    this.resultGrid.innerHTML = Array(count).fill(0).map((_, i) => `
+      <div class="result-grid-item placeholder" data-slot="${i}">
+        <div class="slot-loading">
+          <div class="spinner"></div>
+          <span>Bild ${i + 1}...</span>
         </div>
       </div>
-    `;
-    this.resultCount.textContent = '';
+    `).join('');
   },
 
-  updateBatchProgress(index, status) {
-    const dot = this.resultGrid.querySelector(`.dot[data-index="${index}"]`);
-    if (dot) {
-      dot.classList.remove('active', 'completed', 'error');
-      dot.classList.add(status);
-    }
+  updateSlotStatus(index, status) {
+    const slot = this.resultGrid.querySelector(`[data-slot="${index}"]`);
+    if (!slot) return;
 
-    const progressText = this.resultGrid.querySelector('.progress-text');
-    if (progressText && status === 'active') {
-      progressText.textContent = `Generiere Bild ${index + 1}...`;
+    if (status === 'loading') {
+      slot.innerHTML = `
+        <div class="slot-loading">
+          <div class="spinner"></div>
+          <span>Bild ${index + 1}...</span>
+        </div>
+      `;
+    } else if (status === 'error') {
+      slot.classList.remove('placeholder');
+      slot.classList.add('error');
+      slot.innerHTML = `
+        <div class="slot-error">
+          <span>✕</span>
+          <span>Fehler</span>
+        </div>
+      `;
+    }
+  },
+
+  displaySingleResult(index, generation) {
+    const slot = this.resultGrid.querySelector(`[data-slot="${index}"]`);
+    if (!slot) return;
+
+    // Store the generation index for click handlers
+    const genIndex = this.currentGenerations.length - 1;
+
+    slot.classList.remove('placeholder');
+    slot.innerHTML = `
+      <img src="${generation.file_path}" alt="Generiertes Bild ${index + 1}">
+      <div class="item-actions">
+        <button class="btn-icon" data-action="download" data-gen-index="${genIndex}" title="Download">⬇</button>
+      </div>
+    `;
+
+    // Bind click event for modal
+    slot.addEventListener('click', (e) => {
+      if (e.target.closest('.item-actions')) return;
+      App.openModal(this.currentGenerations[genIndex]);
+    });
+
+    // Bind download button
+    const downloadBtn = slot.querySelector('[data-action="download"]');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.location.href = API.getDownloadUrl(generation.id);
+      });
     }
   },
 
@@ -427,5 +474,31 @@ const ImageGenerator = {
     });
 
     App.showNotification(`${this.currentGenerations.length} Downloads gestartet`, 'success');
+  },
+
+  reset() {
+    // Clear prompt
+    this.promptInput.value = '';
+
+    // Clear reference images
+    this.clearReferenceImages();
+
+    // Reset model and options to defaults
+    this.modelSelect.value = 'nano-banana';
+    this.aspectSelect.value = '1:1';
+    this.resolutionSelect.value = '1K';
+    this.countSelect.value = '1';
+    this.resolutionGroup.hidden = true;
+
+    // Hide help content
+    this.helpContent.hidden = true;
+
+    // Hide results
+    this.resultArea.hidden = true;
+    this.resultGrid.innerHTML = '';
+    this.currentGenerations = [];
+
+    // Focus prompt
+    this.promptInput.focus();
   }
 };

@@ -132,8 +132,8 @@ async function startVideoGeneration(prompt, modelAlias = 'veo-3.1', aspectRatio 
     requestBody.parameters.personGeneration = 'allow_adult';
   }
 
-  // Audio generation (only for text-to-video without frames, and only Veo 3.1)
-  if (modelAlias === 'veo-3.1' && !hasFrames) {
+  // Audio generation (nur Veo 3.1 - Fast unterstützt es nicht)
+  if (modelAlias === 'veo-3.1') {
     requestBody.parameters.generateAudio = generateAudio;
   }
 
@@ -143,7 +143,7 @@ async function startVideoGeneration(prompt, modelAlias = 'veo-3.1', aspectRatio 
   console.log('[GEMINI] Prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
   console.log('[GEMINI] Start Frame:', startFrameBase64 ? `${Math.round(startFrameBase64.length / 1024)}KB` : 'none');
   console.log('[GEMINI] End Frame:', endFrameBase64 ? `${Math.round(endFrameBase64.length / 1024)}KB` : 'none');
-  const audioStatus = hasFrames ? 'disabled (frames)' : (generateAudio ? 'enabled' : 'disabled');
+  const audioStatus = modelAlias === 'veo-3.1' ? (generateAudio ? 'enabled' : 'disabled') : 'not supported';
   console.log('[GEMINI] Aspect:', aspectRatio, '| Duration:', duration, 's | Audio:', audioStatus, '| Resolution:', resolution);
 
   const response = await fetch(
