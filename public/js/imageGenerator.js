@@ -147,7 +147,8 @@ const ImageGenerator = {
     input.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
-        this.loadImage(file, index, preview, placeholder, clearBtn, slot);
+        const currentIndex = parseInt(slot.dataset.index, 10);
+        this.loadImage(file, currentIndex, preview, placeholder, clearBtn, slot);
       }
     });
 
@@ -165,13 +166,15 @@ const ImageGenerator = {
       slot.style.borderColor = '';
       const file = e.dataTransfer.files[0];
       if (file && file.type.startsWith('image/')) {
-        this.loadImage(file, index, preview, placeholder, clearBtn, slot);
+        const currentIndex = parseInt(slot.dataset.index, 10);
+        this.loadImage(file, currentIndex, preview, placeholder, clearBtn, slot);
       }
     });
 
     clearBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.removeImageSlot(index, slot);
+      const currentIndex = parseInt(slot.dataset.index, 10);
+      this.removeImageSlot(currentIndex, slot);
     });
 
     this.imagesContainer.appendChild(slot);
@@ -484,11 +487,11 @@ const ImageGenerator = {
     this.clearReferenceImages();
 
     // Reset model and options to defaults
-    this.modelSelect.value = 'nano-banana';
-    this.aspectSelect.value = '1:1';
+    this.modelSelect.value = 'nano-banana-pro';
+    this.aspectSelect.value = '16:9';
     this.resolutionSelect.value = '1K';
     this.countSelect.value = '1';
-    this.resolutionGroup.hidden = true;
+    this.resolutionGroup.hidden = false;
 
     // Hide help content
     this.helpContent.hidden = true;
