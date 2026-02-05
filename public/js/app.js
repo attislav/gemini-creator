@@ -11,11 +11,36 @@ const App = {
     this.bindModal();
     this.bindZoomControls();
     this.bindHistoryPicker();
+    this.bindShutdown();
+    PromptHistory.init();
     ImageGenerator.init();
     VideoGenerator.init();
     History.init();
 
     History.load();
+  },
+
+  bindShutdown() {
+    const shutdownBtn = document.getElementById('shutdown-btn');
+    shutdownBtn.addEventListener('click', () => this.shutdown());
+  },
+
+  async shutdown() {
+    if (!confirm('Server beenden? Die App wird geschlossen.')) {
+      return;
+    }
+
+    try {
+      await API.shutdown();
+      document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f0f0f; color: white; font-family: system-ui;">
+          <h1 style="margin-bottom: 16px;">Server beendet</h1>
+          <p style="color: #888;">Du kannst dieses Tab jetzt schließen.</p>
+        </div>
+      `;
+    } catch (error) {
+      this.showNotification('Fehler beim Beenden', 'error');
+    }
   },
 
   bindTabs() {
@@ -37,6 +62,8 @@ const App = {
         if (target === 'history') {
           History.load(true);
         }
+
+        PromptHistory.updateVisibility(target);
       });
     });
   },

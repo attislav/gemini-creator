@@ -39,6 +39,7 @@ const ImageGenerator = {
     this.resultCount = document.getElementById('result-count');
     this.downloadAllButton = document.getElementById('download-all-images');
     this.resetButton = document.getElementById('reset-image-btn');
+    this.enhanceButton = document.getElementById('enhance-image-prompt');
 
     this.bindEvents();
   },
@@ -50,6 +51,7 @@ const ImageGenerator = {
     this.downloadAllButton.addEventListener('click', () => this.downloadAllImages());
     this.modelSelect.addEventListener('change', () => this.onModelChange());
     this.resetButton.addEventListener('click', () => this.reset());
+    this.enhanceButton.addEventListener('click', () => this.enhancePrompt());
 
     // History picker for reference images
     document.getElementById('pick-reference-image').addEventListener('click', () => {
@@ -58,6 +60,32 @@ const ImageGenerator = {
 
     // Paste support for reference images (Ctrl+V)
     document.addEventListener('paste', (e) => this.handlePaste(e));
+  },
+
+  async enhancePrompt() {
+    const prompt = this.promptInput.value.trim();
+    if (!prompt) {
+      App.showNotification('Bitte gib zuerst einen Prompt ein', 'error');
+      return;
+    }
+
+    this.setEnhanceLoading(true);
+
+    try {
+      const result = await API.enhancePrompt(prompt, 'image');
+      this.promptInput.value = result.enhanced;
+      App.showNotification('Prompt verbessert!', 'success');
+    } catch (error) {
+      App.showNotification(error.message, 'error');
+    } finally {
+      this.setEnhanceLoading(false);
+    }
+  },
+
+  setEnhanceLoading(loading) {
+    this.enhanceButton.disabled = loading;
+    this.enhanceButton.querySelector('.btn-text').hidden = loading;
+    this.enhanceButton.querySelector('.btn-loading').hidden = !loading;
   },
 
   handlePaste(e) {
@@ -313,6 +341,9 @@ const ImageGenerator = {
     this.setLoading(true);
     this.currentGenerations = [];
     this.resultArea.hidden = false;
+
+    // Add to prompt history
+    PromptHistory.add(prompt, 'image');
 
     // Prepare empty result grid for streaming results
     this.prepareResultGrid(count);

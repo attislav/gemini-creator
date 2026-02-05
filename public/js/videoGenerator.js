@@ -44,6 +44,7 @@ const VideoGenerator = {
     this.resultArea = document.getElementById('video-result');
     this.generatedVideo = document.getElementById('generated-video');
     this.downloadButton = document.getElementById('download-video');
+    this.enhanceButton = document.getElementById('enhance-video-prompt');
 
     this.bindEvents();
   },
@@ -55,6 +56,7 @@ const VideoGenerator = {
     this.setupUploadArea('end-frame-area', this.endFrameInput, this.endFramePreview, 'clear-end-frame', 'end');
 
     this.downloadButton.addEventListener('click', () => this.downloadVideo());
+    this.enhanceButton.addEventListener('click', () => this.enhancePrompt());
 
     // History picker buttons
     document.getElementById('pick-start-frame').addEventListener('click', () => {
@@ -66,6 +68,38 @@ const VideoGenerator = {
 
     // Paste support for frames (Ctrl+V)
     document.addEventListener('paste', (e) => this.handlePaste(e));
+  },
+
+  async enhancePrompt() {
+    const prompt = this.promptInput.value.trim();
+    if (!prompt) {
+      App.showNotification('Bitte gib zuerst einen Prompt ein', 'error');
+      return;
+    }
+
+    this.setEnhanceLoading(true);
+
+    try {
+      // Pass start frame if available for vision analysis
+      const result = await API.enhancePrompt(prompt, 'video', this.startFrameBase64);
+      this.promptInput.value = result.enhanced;
+
+      if (this.startFrameBase64) {
+        App.showNotification('Prompt mit Bildanalyse verbessert!', 'success');
+      } else {
+        App.showNotification('Prompt verbessert!', 'success');
+      }
+    } catch (error) {
+      App.showNotification(error.message, 'error');
+    } finally {
+      this.setEnhanceLoading(false);
+    }
+  },
+
+  setEnhanceLoading(loading) {
+    this.enhanceButton.disabled = loading;
+    this.enhanceButton.querySelector('.btn-text').hidden = loading;
+    this.enhanceButton.querySelector('.btn-loading').hidden = !loading;
   },
 
   handlePaste(e) {
@@ -239,6 +273,9 @@ const VideoGenerator = {
     this.resultArea.hidden = true;
     this.progressBar.style.width = '5%';
     this.statusText.textContent = 'Video wird gestartet...';
+
+    // Add to prompt history
+    PromptHistory.add(prompt, 'video');
 
     try {
       const result = await API.generateVideo(

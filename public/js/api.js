@@ -84,5 +84,32 @@ const API = {
 
   getDownloadUrl(id) {
     return `/api/history/${id}/download`;
+  },
+
+  async shutdown() {
+    const response = await fetch('/api/shutdown', {
+      method: 'POST'
+    });
+    return response.json();
+  },
+
+  async enhancePrompt(prompt, type = 'image', image = null) {
+    const body = { prompt, type };
+    if (image) {
+      body.image = image;
+    }
+
+    const response = await fetch('/api/prompt/enhance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Fehler bei der Prompt-Verbesserung');
+    }
+
+    return response.json();
   }
 };

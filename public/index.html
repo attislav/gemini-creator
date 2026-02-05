@@ -10,6 +10,7 @@
   <div class="app">
     <header class="header">
       <h1>Gemini Creator</h1>
+      <button class="btn-shutdown" id="shutdown-btn" title="Server beenden">Beenden</button>
     </header>
 
     <nav class="tabs">
@@ -18,8 +19,9 @@
       <button class="tab" data-tab="history">History</button>
     </nav>
 
-    <main class="content">
-      <!-- Image Generation Tab -->
+    <div class="main-layout">
+      <main class="content">
+        <!-- Image Generation Tab -->
       <section id="image-tab" class="tab-content active">
         <div class="quick-guide">
           <strong>Kurzanleitung:</strong> Prompt eingeben, Modell & Format wählen, Anzahl festlegen (1-4 Bilder). Optional: Referenzbilder hochladen und im Prompt mit "erstes Bild", "Bild 2" etc. ansprechen.
@@ -29,6 +31,10 @@
           <div class="form-group">
             <label for="image-prompt">Prompt</label>
             <textarea id="image-prompt" placeholder="Beschreibe das Bild, das du erstellen möchtest..." rows="3" required></textarea>
+            <button type="button" class="btn-enhance" id="enhance-image-prompt">
+              <span class="btn-text">Prompt verbessern</span>
+              <span class="btn-loading" hidden>Verbessere...</span>
+            </button>
           </div>
 
           <div class="form-row">
@@ -132,6 +138,10 @@
           <div class="form-group">
             <label for="video-prompt">Prompt</label>
             <textarea id="video-prompt" placeholder="Beschreibe das Video, das du erstellen möchtest..." rows="3" required></textarea>
+            <button type="button" class="btn-enhance" id="enhance-video-prompt">
+              <span class="btn-text">Prompt verbessern</span>
+              <span class="btn-loading" hidden>Verbessere...</span>
+            </button>
           </div>
 
           <div class="form-row">
@@ -256,6 +266,16 @@
         <button class="btn-secondary load-more" id="load-more" hidden>Mehr laden</button>
       </section>
     </main>
+
+    <aside class="prompt-history-sidebar" id="prompt-history-sidebar">
+      <div class="sidebar-header">
+        <h3>Prompt History</h3>
+        <button class="btn-clear-history" id="clear-prompt-history" title="History löschen">Löschen</button>
+      </div>
+      <div class="prompt-history-list" id="prompt-history-list">
+        <p class="prompt-history-empty">Noch keine Prompts in dieser Session.</p>
+      </div>
+    </aside>
   </div>
 
   <!-- Media Modal -->
@@ -310,6 +330,7 @@
   <div class="notification" id="notification" hidden></div>
 
   <script src="js/api.js"></script>
+  <script src="js/promptHistory.js"></script>
   <script src="js/imageGenerator.js"></script>
   <script src="js/videoGenerator.js"></script>
   <script src="js/history.js"></script>
